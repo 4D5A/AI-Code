@@ -68,22 +68,37 @@ The eight skills compose into a full engagement workflow:
 
 ### `scripts/enumeration/ai_enhanced_dns_analysis.ps1`
 
-A PowerShell utility that inspects a domain's DNS configuration and produces an AI-generated security assessment as a styled HTML report.
+A PowerShell utility that inspects a domain's DNS configuration and produces an AI-generated security assessment as a styled HTML report. It works with **either OpenAI (ChatGPT models) or Anthropic (Claude models)**.
 
 **What it does**
-- Queries the target domain for email-security-relevant records (MX, SPF, DMARC, DKIM, and other TXT records) using the built-in Windows DNS resolver.
-- Sends the collected records to an AI model with a cybersecurity-focused prompt to generate tailored recommendations (e.g., email authentication gaps).
-- Compiles the records and recommendations into a local HTML report named `<Domain>-DnsReport.html`.
+- Queries the target domain for email-security-relevant records (MX, SPF, DMARC, DKIM, and other TXT records) using the built-in Windows DNS resolver (`Resolve-DnsName`).
+- Sends the collected records to your chosen AI provider with a cybersecurity-focused prompt to generate tailored recommendations (e.g., email authentication gaps and posture improvements).
+- Compiles **both the collected DNS records and the recommendations** into a local HTML report named `<Domain>-DnsReport.html`, tagged with the provider and model used.
+
+**Provider selection**
+
+| `-Provider` | API | Key (environment variable) | Default model |
+|---|---|---|---|
+| `OpenAI` (default) | `https://api.openai.com/v1/chat/completions` | `OPENAI_API_KEY` | `gpt-4` |
+| `Claude` | `https://api.anthropic.com/v1/messages` | `ANTHROPIC_API_KEY` | `claude-sonnet-5` |
+
+The key is read from the environment variable for the selected provider and is **never** stored in the script — so there is no key to accidentally commit. If the required variable is unset, the script stops with a clear error rather than sending an empty credential. Override the model with `-Model` if needed.
 
 **Requirements**
 - Windows PowerShell with `Resolve-DnsName` available.
-- Network connectivity to your AI provider's API endpoint.
-- A valid API key for the AI provider, supplied via the script's configuration. **Do not commit your API key** — keep it in an environment variable or a local, git-ignored config.
+- Network connectivity to the selected provider's API.
+- An API key for the provider you choose (see the table above).
 
 **Usage**
 
 ```powershell
+# OpenAI (default)
+$env:OPENAI_API_KEY = "<your OpenAI API key>"
 .\ai_enhanced_dns_analysis.ps1 -Domain example.com
+
+# Claude
+$env:ANTHROPIC_API_KEY = "<your Anthropic API key>"
+.\ai_enhanced_dns_analysis.ps1 -Domain example.com -Provider Claude
 ```
 
 The report is written to the current directory. Review the AI-generated recommendations critically — treat them as a starting point for analysis, not authoritative conclusions.
@@ -93,7 +108,7 @@ The report is written to the current directory. Review the AI-generated recommen
 ## Requirements at a glance
 
 - **Skills:** any agent that supports `SKILL.md`-style skills (or use them as human checklists).
-- **Scripts:** Windows PowerShell and an AI provider API key.
+- **Scripts:** Windows PowerShell and an API key for your chosen provider — OpenAI (`OPENAI_API_KEY`) or Anthropic/Claude (`ANTHROPIC_API_KEY`).
 
 ---
 
